@@ -1,0 +1,37 @@
+[project]
+name = "python-trpc"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.10"
+
+dependencies = ["pydantic"]
+
+[dependency-groups]
+dev = [
+    "pytest",
+ "pre-commit",
+ "coverage",
+ "ipython",
+ "ruff",
+ "ty",
+]
+
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["src/vitals*"]
+
+[tool.pyright]
+include = ["src/vitals"]
+exclude = [
+    "**/node_modules",
+    "**/__pycache__",
+    "vitals/experimental",
+    "vitals/typestubs",
+]
+venvPath = ".venv"
+venv = "python_tprc"
