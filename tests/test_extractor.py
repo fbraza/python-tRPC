@@ -22,16 +22,10 @@ def test_extract_simple_function():
 
     assert schema == {
         "input": {
-            "properties": {
-                "limit": {"type": "integer", "default": 10},
-                "offset": {"type": "integer", "default": 0},
-            },
-            "required": [],
+            "properties": {"user_id": {"type": "integer"}},
+            "required": ["user_id"],
         },
-        "output": {
-            "type": "array",
-            "items": {"type": "pydantic", "$ref": "#/defs/User"},
-        },
+        "output": {"$ref": "#/defs/User"},
         "$defs": {
             "User": {
                 "properties": {
