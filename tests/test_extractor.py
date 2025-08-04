@@ -20,6 +20,8 @@ def test_extract_simple_function():
 
     schema = extractor.schemas(sig=func_sig, hints=func_typ)
 
+    print(schema)
+
     assert schema["input"]["properties"]["user_id"]["type"] == "integer"
     assert schema["output"]["$ref"] == "#/defs/User"
     assert "User" in schema["$defs"]
@@ -32,6 +34,8 @@ def test_extract_optional_params():
     func_typ = get_type_hints(list_users)
 
     schema = extractor.schemas(sig=func_sig, hints=func_typ)
+
+    print(schema)
 
     assert schema["input"]["properties"]["limit"]["default"] == 10
     assert schema["input"]["required"] == []  # No required params
