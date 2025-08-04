@@ -1,7 +1,7 @@
 import inspect
 from typing import Any, get_args, get_origin, get_type_hints
 
-from pydantic import BaseModel
+import models
 
 TYPE_MAPPING = {
     int: "integer",
@@ -47,10 +47,6 @@ def schemas(sig: inspect.Signature, hints: dict[str, Any]):
     }
 
 
-def is_pydantic(obj: Any):
-    return issubclass(obj, BaseModel)
-
-
 def collect_properties_and_required(sig: inspect.Signature, hints: dict[str, Any]):
     """
     Function that inspect an object and collect its types to populate properties
@@ -77,7 +73,7 @@ def collect_output_types(return_type: Any):
     output: dict[str, Any] = {}
     model: list[Any] = []
 
-    if is_pydantic(return_type):
+    if models.is_pydantic(return_type):
         model.append(return_type)
         output["$ref"] = f"#/defs/{return_type.__name__}"
 
@@ -89,7 +85,7 @@ def collect_output_types(return_type: Any):
         if with_generic_type:
             # check if type is pydantic class
             obj_type = generic[0]
-            has_model = is_pydantic(obj_type)
+            has_model = models.is_pydantic(obj_type)
             if has_model:
                 model.append(obj_type)
                 output["items"] = {
