@@ -1,5 +1,7 @@
 import inspect
-from typing import Any, get_type_hints
+from typing import Any, get_args, get_origin, get_type_hints
+
+from pydantic import BaseModel
 
 TYPE_MAPPING = {
     int: "integer",
@@ -33,31 +35,27 @@ def schemas(sig: inspect.Signature, hints: dict[str, Any]):
         }
     }
     """
-    input_properties, input_required = __collect_schemas(sig=sig, hints=hints)
-    output_properties, output_required = __collect_schemas(
-        sig=inspect.signature(hints["return"]), hints=get_type_hints(hints["return"])
-    )
-
-    schema = {
+    properties, required = collect_properties_and_required(sig=sig, hints=hints)
+    output, defs = collect_output_types(return_type=hints["return"])
+    return {
         "input": {
-            "type": "object",
-            "properties": input_properties,
-            "required": input_required,
+            "properties": properties,
+            "required": required,
         },
-        "output": {"$ref": f"#/defs/{hints['return'].__name__}"},
-        "$defs": {
-            hints["return"].__name__: {
-                "properties": output_properties,
-                "required": output_required,
-            },
-        },
+        "output": output,
+        "$defs": defs,
     }
 
-    print(schema)
-    return schema
+
+def is_pydantic(obj: Any):
+    return issubclass(obj, BaseModel)
 
 
-def __collect_schemas(sig: inspect.Signature, hints: dict[str, Any]):
+def collect_properties_and_required(sig: inspect.Signature, hints: dict[str, Any]):
+    """
+    Function that inspect an object and collect its types to populate properties
+    and required schemas entries.
+    """
     properties, required = {}, []
 
     for name, parameter in sig.parameters.items():
@@ -68,3 +66,51 @@ def __collect_schemas(sig: inspect.Signature, hints: dict[str, Any]):
             properties[name]["default"] = parameter.default
 
     return properties, required
+
+
+def collect_output_types(return_type: Any):
+    """
+    Function that specifically inspect the returned type. Presumably should be
+    a data model (pydantic, msgspec, dataclasses, attrs). The populate the output,
+    defs, with properties and required fields of the schema.
+    """
+    output: dict[str, Any] = {}
+    model: list[Any] = []
+
+    if is_pydantic(return_type):
+        model.append(return_type)
+        output["$ref"] = f"#/defs/{return_type.__name__}"
+
+    if get_origin(return_type) is list:
+        output["type"] = "array"
+        generic = get_args(return_type)
+        # check if we have list or list[T]
+        with_generic_type = bool(generic)
+        if with_generic_type:
+            # check if type is pydantic class
+            obj_type = generic[0]
+            has_model = is_pydantic(obj_type)
+            if has_model:
+                model.append(obj_type)
+                output["items"] = {
+                    "type": "pydantic",
+                    "$ref": f"#/defs/{obj_type.__name__}",
+                }
+            # if no pydantic model we just map the std types
+            else:
+                output["items"] = {"type": f"{TYPE_MAPPING[obj_type]}"}
+
+    defs: dict[str, Any] = {}
+    if model:
+        model_to_inspect = model.pop()
+        model_sig = inspect.signature(model_to_inspect)
+        model_typ = get_type_hints(model_to_inspect)
+        properties, required = collect_properties_and_required(
+            sig=model_sig, hints=model_typ
+        )
+        defs[model_to_inspect.__name__] = {
+            "properties": properties,
+            "required": required,
+        }
+
+    return output, defs

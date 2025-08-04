@@ -20,9 +20,23 @@ def test_extract_simple_function():
 
     schema = extractor.schemas(sig=func_sig, hints=func_typ)
 
-    assert schema["input"]["properties"]["user_id"]["type"] == "integer"
-    assert schema["output"]["$ref"] == "#/defs/User"
-    assert "User" in schema["$defs"]
+    assert schema == {
+        "input": {
+            "properties": {"user_id": {"type": "integer"}},
+            "required": ["user_id"],
+        },
+        "output": {"$ref": "#/defs/User"},
+        "$defs": {
+            "User": {
+                "properties": {
+                    "id": {"type": "integer"},
+                    "name": {"type": "string"},
+                    "email": {"type": "string"},
+                },
+                "required": ["id", "name", "email"],
+            }
+        },
+    }
 
 
 def test_extract_optional_params():
@@ -33,5 +47,44 @@ def test_extract_optional_params():
 
     schema = extractor.schemas(sig=func_sig, hints=func_typ)
 
-    assert schema["input"]["properties"]["limit"]["default"] == 10
-    assert schema["input"]["required"] == []  # No required params
+    assert schema == {
+        "input": {
+            "properties": {
+                "limit": {"type": "integer", "default": 10},
+                "offset": {"type": "integer", "default": 0},
+            },
+            "required": [],
+        },
+        "output": {
+            "type": "array",
+            "items": {"type": "pydantic", "$ref": "#/defs/User"},
+        },
+        "$defs": {
+            "User": {
+                "properties": {
+                    "id": {"type": "integer"},
+                    "name": {"type": "string"},
+                    "email": {"type": "string"},
+                },
+                "required": ["id", "name", "email"],
+            }
+        },
+    }
+
+
+def test_extract_with_list_interger_as_output():
+    def get_id_of_user_with_name_starting_by(pattern: str) -> list[int]: ...  # type: ignore
+
+    func_sig = inspect.signature(get_id_of_user_with_name_starting_by)
+    func_typ = get_type_hints(get_id_of_user_with_name_starting_by)
+
+    schema = extractor.schemas(sig=func_sig, hints=func_typ)
+
+    assert schema == {
+        "input": {
+            "properties": {"pattern": {"type": "string"}},
+            "required": ["pattern"],
+        },
+        "output": {"type": "array", "items": {"type": "integer"}},
+        "$defs": {},
+    }
