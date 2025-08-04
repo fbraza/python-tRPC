@@ -85,16 +85,21 @@ def collect_output_types(sig: inspect.Signature, return_type: Any):
 
     if get_origin(return_type) is list:
         output["type"] = "array"
-        has_model = is_pydantic(get_args(return_type)[0])
-        obj_type = get_args(return_type)[0]
-        if has_model:
-            model.append(obj_type)
-            output["items"] = {
-                "type": "pydantic",
-                "$ref": f"#/defs/{obj_type.__name__}",
-            }
-        else:
-            output["items"] = {"type": f"{TYPE_MAPPING[return_type]}"}
+        # check if we have list or list[T]
+        with_generic_type = bool(get_args(return_type))
+        if with_generic_type:
+            # check if type is pydantic class
+            obj_type = get_args(return_type)[0]
+            has_model = is_pydantic(obj_type)
+            if has_model:
+                model.append(obj_type)
+                output["items"] = {
+                    "type": "pydantic",
+                    "$ref": f"#/defs/{obj_type.__name__}",
+                }
+            # if no pydantic model we just map the std types
+            else:
+                output["items"] = {"type": f"{TYPE_MAPPING[obj_type]}"}
 
     defs: dict[str, Any] = {}
     if model:
