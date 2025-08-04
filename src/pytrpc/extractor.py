@@ -36,9 +36,7 @@ def schemas(sig: inspect.Signature, hints: dict[str, Any]):
     }
     """
     properties, required = collect_properties_and_required(sig=sig, hints=hints)
-    output, defs = collect_output_types(
-        sig=inspect.signature(hints["return"]), return_type=hints["return"]
-    )
+    output, defs = collect_output_types(return_type=hints["return"])
     return {
         "input": {
             "properties": properties,
@@ -70,7 +68,7 @@ def collect_properties_and_required(sig: inspect.Signature, hints: dict[str, Any
     return properties, required
 
 
-def collect_output_types(sig: inspect.Signature, return_type: Any):
+def collect_output_types(return_type: Any):
     """
     Function that specifically inspect the returned type. Presumably should be
     a data model (pydantic, msgspec, dataclasses, attrs). The populate the output,
@@ -85,11 +83,12 @@ def collect_output_types(sig: inspect.Signature, return_type: Any):
 
     if get_origin(return_type) is list:
         output["type"] = "array"
+        generic = get_args(return_type)
         # check if we have list or list[T]
-        with_generic_type = bool(get_args(return_type))
+        with_generic_type = bool(generic)
         if with_generic_type:
             # check if type is pydantic class
-            obj_type = get_args(return_type)[0]
+            obj_type = generic[0]
             has_model = is_pydantic(obj_type)
             if has_model:
                 model.append(obj_type)
