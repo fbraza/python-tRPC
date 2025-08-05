@@ -5,17 +5,10 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.10"
 
-dependencies = ["pydantic"]
+dependencies = ["msgspec", "pandera", "pandas", "pyarrow"]
 
 [dependency-groups]
-dev = [
-    "pytest",
- "pre-commit",
- "coverage",
- "ipython",
- "ruff",
- "ty",
-]
+dev = ["pytest", "pre-commit", "coverage", "ipython", "ruff", "ty"]
 
 [build-system]
 requires = ["setuptools>=61.0", "wheel"]
@@ -23,15 +16,15 @@ build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["src/vitals*"]
+include = ["src/pytrpc*"]
 
 [tool.pyright]
-include = ["src/vitals"]
+include = ["src/pytrpc"]
 exclude = [
     "**/node_modules",
     "**/__pycache__",
-    "vitals/experimental",
-    "vitals/typestubs",
+    "pytrpc/experimental",
+    "pytrpc/typestubs",
 ]
 venvPath = ".venv"
 venv = "python_tprc"
