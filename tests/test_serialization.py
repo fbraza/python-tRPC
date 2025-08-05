@@ -2,20 +2,20 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from pytrpc import serialization
+from pytrpc import serialiser
 
 
 def test_dataframe_roundtrip():
     """Test DataFrame can be serialized and deserialized without loss"""
     original_df = pd.DataFrame({"a": [1, 2, 3], "b": ["x", "y", "z"]})
 
-    pa_serialized = serialization.to_arrow(original_df, False)
-    pa_deserialized = serialization.to_pandas(pa_serialized, format="arrow")
+    pa_serialized = serialiser.to_arrow(original_df, False)
+    pa_deserialized = serialiser.to_pandas(pa_serialized, format="arrow")
 
     pd.testing.assert_frame_equal(original_df, pa_deserialized)
 
-    pq_serialized = serialization.to_parquet(original_df, False)
-    pq_deserialized = serialization.to_pandas(pq_serialized, format="parquet")
+    pq_serialized = serialiser.to_parquet(original_df, False)
+    pq_deserialized = serialiser.to_pandas(pq_serialized, format="parquet")
 
     pd.testing.assert_frame_equal(original_df, pq_deserialized)
 
@@ -31,13 +31,13 @@ def test_large_dataframe():
         }
     )
 
-    pa_serialized = serialization.to_arrow(large_df, False)
-    pa_deserialized = serialization.to_pandas(pa_serialized, format="arrow")
+    pa_serialized = serialiser.to_arrow(large_df, False)
+    pa_deserialized = serialiser.to_pandas(pa_serialized, format="arrow")
 
     pd.testing.assert_frame_equal(large_df, pa_deserialized)
 
-    pq_serialized = serialization.to_parquet(large_df, False)
-    pq_deserialized = serialization.to_pandas(pq_serialized, format="parquet")
+    pq_serialized = serialiser.to_parquet(large_df, False)
+    pq_deserialized = serialiser.to_pandas(pq_serialized, format="parquet")
 
     pd.testing.assert_frame_equal(large_df, pq_deserialized)
 
@@ -54,8 +54,8 @@ def test_different_dtypes():
         }
     )
 
-    pa_serialized = serialization.to_arrow(df, False)
-    pa_deserialized = serialization.to_pandas(pa_serialized, format="arrow")
+    pa_serialized = serialiser.to_arrow(df, False)
+    pa_deserialized = serialiser.to_pandas(pa_serialized, format="arrow")
 
     pd.testing.assert_frame_equal(df, pa_deserialized)
 
@@ -77,13 +77,13 @@ def test_nullable_types():
         }
     )
 
-    pa_serialized = serialization.to_arrow(df, False)
-    pa_deserialized = serialization.to_pandas(pa_serialized, format="arrow")
+    pa_serialized = serialiser.to_arrow(df, False)
+    pa_deserialized = serialiser.to_pandas(pa_serialized, format="arrow")
 
     pd.testing.assert_frame_equal(df, pa_deserialized)
 
-    pq_serialized = serialization.to_parquet(df, False)
-    pq_deserialized = serialization.to_pandas(pq_serialized, format="parquet")
+    pq_serialized = serialiser.to_parquet(df, False)
+    pq_deserialized = serialiser.to_pandas(pq_serialized, format="parquet")
 
     pd.testing.assert_frame_equal(df, pq_deserialized)
 
@@ -101,13 +101,13 @@ def test_categorical_data():
         }
     )
 
-    pa_serialized = serialization.to_arrow(df, False)
-    pa_deserialized = serialization.to_pandas(pa_serialized, format="arrow")
+    pa_serialized = serialiser.to_arrow(df, False)
+    pa_deserialized = serialiser.to_pandas(pa_serialized, format="arrow")
 
     pd.testing.assert_frame_equal(df, pa_deserialized)
 
-    pq_serialized = serialization.to_parquet(df, False)
-    pq_deserialized = serialization.to_pandas(pq_serialized, format="parquet")
+    pq_serialized = serialiser.to_parquet(df, False)
+    pq_deserialized = serialiser.to_pandas(pq_serialized, format="parquet")
 
     pd.testing.assert_frame_equal(df, pq_deserialized)
 
@@ -116,19 +116,19 @@ def test_invalid_format():
     """Test error handling for invalid format"""
     df = pd.DataFrame({"a": [1, 2, 3]})
 
-    with pytest.raises(serialization.EncodingError):
-        compressed = serialization.to_parquet(
+    with pytest.raises(serialiser.EncodingError):
+        compressed = serialiser.to_parquet(
             df, preserve_index=False, compression="snappy"
         )
-        serialization.to_pandas(compressed, format="invalid format")
+        serialiser.to_pandas(compressed, format="invalid format")
 
 
 def test_mixed_type_columns():
     """Test handling of mixed-type object columns"""
     df = pd.DataFrame({"mixed": [1, "string", 3.14, True, None]})
 
-    serialized = serialization.to_arrow(df, False)
-    deserialized = serialization.to_pandas(serialized, format="arrow")
+    serialized = serialiser.to_arrow(df, False)
+    deserialized = serialiser.to_pandas(serialized, format="arrow")
 
     # Should have same number of rows
     assert len(df) == len(deserialized)

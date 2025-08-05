@@ -5,10 +5,10 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.10"
 
-dependencies = ["msgspec", "pandera", "pandas", "pyarrow"]
+dependencies = ["pandantic", "pydantic", "pyarrow"]
 
 [dependency-groups]
-dev = ["pytest", "pre-commit", "coverage", "ipython", "ruff", "ty"]
+dev = ["pandas", "pytest", "pre-commit", "coverage", "ipython", "ruff", "ty"]
 
 [build-system]
 requires = ["setuptools>=61.0", "wheel"]
