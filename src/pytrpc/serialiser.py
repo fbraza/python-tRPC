@@ -1,3 +1,5 @@
+from typing import Any
+
 import pandas as pd
 import pyarrow as pa
 import pyarrow.parquet as pq
@@ -16,16 +18,16 @@ def prepare_dataframe_dtypes(df: pd.DataFrame) -> pd.DataFrame:
     # Handle mixed-type object columns by converting to string
     for col in df_clean.select_dtypes(include=["object"]).columns:
         # Check if column has mixed types (excluding None/NaN)
-        non_null_values = df_clean[col].dropna()
+        non_null_values: pd.Series[Any] = df_clean[col].dropna()
         if len(non_null_values) > 0:
-            types = non_null_values.apply(type).unique()
+            types = {type(value) for value in non_null_values}
             if len(types) > 1:
                 # Mixed types detected, convert to string
                 df_clean[col] = df_clean[col].astype(str)
 
     # Handle nullable integers for better Arrow compatibility
     for col in df_clean.select_dtypes(include=["int64"]).columns:
-        if df_clean[col].isna().any():  # type: ignore
+        if df_clean[col].isna().any():
             df_clean[col] = df_clean[col].astype("Int64")
 
     return df_clean
