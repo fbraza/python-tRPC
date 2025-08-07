@@ -1,21 +1,14 @@
 [project]
-name = "python-trpc"
+name = "python-FrameRPC"
 version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.10"
 
-dependencies = ["pydantic"]
+dependencies = ["pandantic", "pydantic", "pyarrow"]
 
 [dependency-groups]
-dev = [
-    "pytest",
- "pre-commit",
- "coverage",
- "ipython",
- "ruff",
- "ty",
-]
+dev = ["pandas", "pytest", "pre-commit", "coverage", "ipython", "ruff", "ty"]
 
 [build-system]
 requires = ["setuptools>=61.0", "wheel"]
@@ -23,15 +16,15 @@ build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["src/vitals*"]
+include = ["src/FrameRPC*"]
 
 [tool.pyright]
-include = ["src/vitals"]
+include = ["src/FrameRPC"]
 exclude = [
     "**/node_modules",
     "**/__pycache__",
-    "vitals/experimental",
-    "vitals/typestubs",
+    "FrameRPC/experimental",
+    "FrameRPC/typestubs",
 ]
 venvPath = ".venv"
-venv = "python_tprc"
+venv = "FrameRPC"
