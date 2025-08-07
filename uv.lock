@@ -829,12 +829,13 @@ wheels = [
 ]
 
 [[package]]
-name = "python-trpc"
+name = "python-framerpc"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [
     { name = "pandantic" },
     { name = "pyarrow" },
+    { name = "pydantic" },
 ]
 
 [package.dev-dependencies]
@@ -853,6 +854,7 @@ dev = [
 requires-dist = [
     { name = "pandantic" },
     { name = "pyarrow" },
+    { name = "pydantic" },
 ]
 
 [package.metadata.requires-dev]
