@@ -2,6 +2,7 @@ import inspect
 from typing import get_type_hints
 
 from pydantic import BaseModel
+from msgspec import Struct
 
 from pytrpc import extractor
 
@@ -10,6 +11,11 @@ class User(BaseModel):
     id: int
     name: str
     email: str
+
+
+class Car(Struct):
+    color: str
+    engine: str
 
 
 def test_extract_simple_function():
@@ -87,4 +93,50 @@ def test_extract_with_list_interger_as_output():
         },
         "output": {"type": "array", "items": {"type": "integer"}},
         "$defs": {},
+    }
+
+
+def test_extract_with_list_msgspec_and_pydantic_as_output():
+    def get_id_of_user_and_cars(pattern: str) -> list[User, Car]: ...  # type: ignore
+
+    func_sig = inspect.signature(get_id_of_user_and_cars)
+    func_typ = get_type_hints(get_id_of_user_and_cars)
+
+    schema = extractor.schemas(sig=func_sig, hints=func_typ)
+
+    assert schema == {
+        "input": {
+            "properties": {
+                "pattern": {"type": "string"}
+            },
+            "required": ["pattern"],
+        },
+        "output": {
+            "type": "array",
+            "items": [
+                {"type": "pydantic", "$ref": "#/defs/User"},
+                {"type": "msgspec", "$ref": "#/defs/Car"},
+            ]
+        },
+        "$defs": [
+            {
+                "Car": {
+                    "properties": {
+                        "color": {"type": "string"},
+                        "engine": {"type": "string"},
+                    },
+                    "required": ["color", "engine"],
+                }
+            },
+            {
+                "User": {
+                    "properties": {
+                        "id": {"type": "integer"},
+                        "name": {"type": "string"},
+                        "email": {"type": "string"},
+                    },
+                    "required": ["id", "name", "email"],
+                }
+            }
+        ],
     }

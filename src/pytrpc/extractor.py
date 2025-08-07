@@ -36,7 +36,7 @@ def schemas(sig: inspect.Signature, hints: dict[str, Any]):
     }
     """
     properties, required = collect_properties_and_required(sig=sig, hints=hints)
-    output, defs = collect_output_types(return_type=hints["return"])
+    output, defs = collect_type_refs_and_defs(return_type=hints["return"])
     return {
         "input": {
             "properties": properties,
@@ -64,49 +64,85 @@ def collect_properties_and_required(sig: inspect.Signature, hints: dict[str, Any
     return properties, required
 
 
-def collect_output_types(return_type: Any):
+def collect_type_refs_and_defs(return_type: Any):
     """
     Function that specifically inspect the returned type. Presumably should be
-    a data model (pydantic, msgspec, dataclasses, attrs). The populate the output,
+    a data model (pydantic, msgspec, dataclasses, attrs). Then populate the output,
     defs, with properties and required fields of the schema.
     """
     output: dict[str, Any] = {}
-    model: list[Any] = []
+    model_list: list[Any] = []
 
-    if models.is_pydantic(return_type):
-        model.append(return_type)
+    if models.inspect(return_type) is not None:
+        model_list.append(return_type)
         output["$ref"] = f"#/defs/{return_type.__name__}"
+    elif get_origin(return_type) is list:
+        __collect_list_items_types(output, model_list, return_type)
+    else:
+        output["items"] = {"type": f"{TYPE_MAPPING[return_type]}"}
 
-    if get_origin(return_type) is list:
-        output["type"] = "array"
-        generic = get_args(return_type)
-        # check if we have list or list[T]
-        with_generic_type = bool(generic)
-        if with_generic_type:
-            # check if type is pydantic class
-            obj_type = generic[0]
-            has_model = models.is_pydantic(obj_type)
-            if has_model:
-                model.append(obj_type)
-                output["items"] = {
-                    "type": "pydantic",
-                    "$ref": f"#/defs/{obj_type.__name__}",
-                }
-            # if no pydantic model we just map the std types
+    defs = __collect_object_definitions(model_list)
+
+    return output, defs
+
+
+def __collect_list_items_types(
+    output: dict[str, Any], model_list: list[Any], return_type: Any
+):
+    output["type"] = "array"
+    generic = get_args(return_type)
+
+    if len(generic) == 1:
+        # check if type is pydantic class
+        obj = generic[0]
+        which_model = models.inspect(obj)
+        if which_model is not None:
+            model_list.append(obj)
+            output["items"] = {
+                "type": f"{which_model}",
+                "$ref": f"#/defs/{obj.__name__}",
+            }
+        # if no pydantic model we just map the std types
+        else:
+            output["items"] = {"type": f"{TYPE_MAPPING[obj]}"}
+    elif len(generic) > 1:
+        output["items"] = []
+        for obj in generic:
+            which_model = models.inspect(obj)
+            if which_model is not None:
+                model_list.append(obj)
+                output["items"].append(
+                    {
+                        "type": f"{which_model}",
+                        "$ref": f"#/defs/{obj.__name__}",
+                    }
+                )
             else:
-                output["items"] = {"type": f"{TYPE_MAPPING[obj_type]}"}
+                output["items"].append({"type": f"{TYPE_MAPPING[obj]}"})
 
-    defs: dict[str, Any] = {}
-    if model:
-        model_to_inspect = model.pop()
+
+def __collect_object_definitions(model_list: list[Any]) -> dict[str, Any] | list[dict[str, Any]]:
+    """
+    From a list of models (pydantic, msgspec, dataclasses), generate their definitions.
+    """
+    defs: list[dict[str, Any]] = []
+
+    while model_list:
+        model_to_inspect = model_list.pop()
         model_sig = inspect.signature(model_to_inspect)
         model_typ = get_type_hints(model_to_inspect)
         properties, required = collect_properties_and_required(
             sig=model_sig, hints=model_typ
         )
-        defs[model_to_inspect.__name__] = {
-            "properties": properties,
-            "required": required,
-        }
+        defs.append ({ model_to_inspect.__name__: {
+                "properties": properties,
+                "required": required,
+            }
+        })
 
-    return output, defs
+    if len(defs) == 0:
+        return {}
+    elif len(defs) == 1:
+        return defs.pop()
+    else:
+        return defs
